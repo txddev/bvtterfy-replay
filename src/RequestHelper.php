@@ -13,14 +13,20 @@ class RequestHelper
         if (in_array('xxh3', hash_algos())) {
             $hashAlgo = 'xxh3';
         }
+        
+        $data = [
+            $request->ip(),
+            $request->path(),
+            $request->all(),
+        ];
+        if(config('replay.include_headers_in_signature')){
+            $data[] = $request->headers->all();
+        }
+        if(config('replay.include_user_in_signature')){
+            $data[] = $request->user();
+        }
+        
 
-        return hash($hashAlgo, json_encode(
-            [
-                $request->ip(),
-                $request->path(),
-                $request->all(),
-                $request->headers->all(),
-            ]
-        ));
+        return hash($hashAlgo, json_encode($data));
     }
 }

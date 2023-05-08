@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace Bvtterfly\Replay;
 
 use Bvtterfly\Replay\Exceptions\InvalidConfiguration;
-use Illuminate\Cache\TaggableStore;
-use Illuminate\Cache\TaggedCache;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 
 class Storage
 {
-    private TaggedCache $taggedCache;
+    private $taggedCache;
 
     private LockProvider $lockProvider;
 
@@ -47,20 +45,16 @@ class Storage
     protected function lockProvider(): LockProvider
     {
         $lockProvider = $this->cache->getStore();
-        if (! $lockProvider instanceof LockProvider) {
+        if (!$lockProvider instanceof LockProvider) {
             throw InvalidConfiguration::notALockProvider(config('replay.use'));
         }
 
         return $lockProvider;
     }
 
-    protected function tagged(): TaggedCache
+    protected function tagged()
     {
-        if (! $this->cache->getStore() instanceof TaggableStore) {
-            throw InvalidConfiguration::notATaggableStore(config('replay.use'));
-        }
-
-        return $this->cache->tags('idempotency_requests');
+        return $this->cache;
     }
 
     protected function getCacheKey(string $key): string

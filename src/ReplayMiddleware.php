@@ -9,7 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class Replay
+class ReplayMiddleware
 {
     public function __construct(
         private Policy $policy,
@@ -28,14 +28,26 @@ class Replay
         }
 
         $key = $this->getCacheKey($request, $cachePrefix);
-
+        
+        
         if ($recordedResponse = ReplayResponse::find($key)) {
             return $recordedResponse->toResponse(RequestHelper::signature($request));
         }
         $lock = $this->storage->lock($key);
 
-        if (! $lock->get()) {
-            abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));
+        $start = microtime(true);
+        $current = $start;
+        
+        while(!$lock->get()){
+            if($current - $start > config('replay.wait_for_response_in_process_timeout')){
+                abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));  
+            }
+            sleep(1);
+            if ($recordedResponse = ReplayResponse::find($key)) {
+                return $recordedResponse->toResponse(RequestHelper::signature($request));
+            }
+            $lock = $this->storage->lock($key);
+            $current=microtime(true);
         }
 
         try {
@@ -50,15 +62,15 @@ class Replay
         }
     }
 
-    private function getCacheKey(Request $request, ?string $prefix = null): string
+    protected function getCacheKey(Request $request, ?string $prefix = null): string
     {
         $idempotencyKey = $this->getIdempotencyKey($request);
 
         return $prefix ? "$prefix:$idempotencyKey" : $idempotencyKey;
     }
 
-    private function getIdempotencyKey(Request $request): string
+    protected function getIdempotencyKey(Request $request): string
     {
-        return $request->header(config('replay.header_name'));
+        return $request->header(config('replay.header_name')) ?? $request->input(config('replay.header_name'));
     }
 }
