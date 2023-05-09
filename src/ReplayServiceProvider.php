@@ -6,12 +6,22 @@ namespace Bvtterfly\Replay;
 
 use Bvtterfly\Replay\Commands\CacheReset;
 use Bvtterfly\Replay\Contracts\Policy;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Cache;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class ReplayServiceProvider extends PackageServiceProvider
 {
+    public function packageBooted()
+    {
+        Blade::directive('idempotencytoken', function ($expression) {
+            $uuid = \Illuminate\Support\Str::uuid();
+            $inputName = config('replay.header_name');
+            return "<input hidden name=\"$inputName\" value=\"$uuid\">";
+        });
+    }
+    
     public function configurePackage(Package $package): void
     {
         /*
