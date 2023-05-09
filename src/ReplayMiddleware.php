@@ -19,17 +19,16 @@ class ReplayMiddleware
 
     public function handle(Request $request, Closure $next, ?string $cachePrefix = null): Response
     {
-        if (! config('replay.enabled')) {
+        if (!config('replay.enabled')) {
             return $next($request);
         }
 
-        if (! $this->policy->isIdempotentRequest($request)) {
+        if (!$this->policy->isIdempotentRequest($request)) {
             return $next($request);
         }
 
         $key = $this->getCacheKey($request, $cachePrefix);
-        
-        
+
         if ($recordedResponse = ReplayResponse::find($key)) {
             return $recordedResponse->toResponse(RequestHelper::signature($request));
         }
@@ -37,17 +36,17 @@ class ReplayMiddleware
 
         $start = microtime(true);
         $current = $start;
-        
-        while(!$lock->get()){
-            if($current - $start > config('replay.wait_for_response_in_process_timeout')){
-                abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));  
+
+        while (!$lock->get()) {
+            if ($current - $start > config('replay.wait_for_response_in_process_timeout')) {
+                abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));
             }
             sleep(1);
             if ($recordedResponse = ReplayResponse::find($key)) {
                 return $recordedResponse->toResponse(RequestHelper::signature($request));
             }
             $lock = $this->storage->lock($key);
-            $current=microtime(true);
+            $current = microtime(true);
         }
 
         try {

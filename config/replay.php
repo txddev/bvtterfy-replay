@@ -31,6 +31,7 @@ return [
     */
 
     'enabled' => env('REPLAY_ENABLED', true),
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -82,9 +83,10 @@ return [
     */
 
     'policy' => ReplayPolicy::class,
+    'methods' => ['POST','PATCH','DELETE'],
+    
+    
     'wait_for_response_in_process_timeout' => 10,
-    
-    
     'include_headers_in_signature' => false,
     'include_user_in_signature' => true
 

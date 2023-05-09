@@ -15,13 +15,11 @@ class ReplayServiceProvider extends PackageServiceProvider
 {
     public function packageBooted()
     {
-        Blade::directive('idempotencytoken', function ($expression) {
-            $uuid = \Illuminate\Support\Str::uuid();
-            $inputName = config('replay.header_name');
-            return "<input hidden name=\"$inputName\" value=\"$uuid\">";
+        Blade::directive('idempotencytoken', function () {
+            return "<input hidden value=\"<?php echo \Illuminate\Support\Str::uuid(); ?>\" name=\"<?php echo config('replay.header_name'); ?>\">";
         });
     }
-    
+
     public function configurePackage(Package $package): void
     {
         /*
